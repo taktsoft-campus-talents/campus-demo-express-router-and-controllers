@@ -4,20 +4,40 @@ const bodyParser = require("body-parser");
 const notes = [
   {
     id: 34,
-    text: "Küche aufräumen",
+    text: "Küche aufräumen!",
+    category: "cleaning",
   },
   {
     id: 5,
-    text: "Einkaufen",
+    text: "Kartoffeln kaufen",
+    category: "shopping",
   },
   {
     id: 17,
     text: "Wäsche waschen",
+    category: "cleaning",
+  },
+  {
+    id: 16,
+    text: "Obst kaufen",
+    category: "shopping",
   },
 ];
 
+// function getNextId() {
+//   // iterate over the array and find the highest id used. return this number +1
+//   let newId = 0;
+//   for (let i = 0; i < notes.length; i++) {
+//     if (notes[i].id > newId) {
+//       newId = notes[i].id;
+//     }
+//   }
+//   return newId + 1;
+// }
+
 function getNextId() {
-  // iterate over the array and find the highest id used. return this number +1
+  //[34, 5, 17];
+  return Math.max(...notes.map((note) => note.id)) + 1;
 }
 
 const app = express();
@@ -45,14 +65,53 @@ app.get("/notes/:id", (req, res) => {
 
 app.post("/notes", (req, res) => {
   console.log(req.body);
+
+  // req.body contains the new note object WITHOUT id
   const newNote = req.body;
+
+  // we calculate a new id based on the current content of our notes array
   const nextId = getNextId();
-  notes.push({
+
+  // We create a new object based on the properties in newNote PLUS the new id
+  const noteToReturn = {
     ...newNote, //spread operator
     id: nextId,
-  });
-  console.log(notes);
-  res.json({ msg: "This is the POST /notes route" });
+  };
+
+  // We push the new object into the notes array (later we will add this to a database)
+  notes.push(noteToReturn);
+
+  // We return the new note object to the client
+  res.json(noteToReturn);
+});
+
+app.delete("/notes/:id", (req, res) => {
+  const { id } = req.params;
+
+  console.log("id", id);
+
+  const index = notes.findIndex((note) => note.id === Number(id));
+
+  if (index > -1) {
+    notes.splice(index, 1);
+    res.json({ msg: `Element with id=${id} successfully deleted` });
+  } else {
+    res.status(404).json({ msg: "resource not found" });
+  }
+});
+
+app.patch("/notes/:id", (req, res) => {
+  const { id } = req.params;
+  const { text, category } = req.body;
+  const index = notes.findIndex((note) => note.id === Number(id));
+
+  if (index > -1) {
+    notes[index].text = text;
+    notes[index].category = category;
+    res.json(notes[index]);
+  } else {
+    res.status(404).json({ msg: "resource not found" });
+  }
 });
 
 app.listen(3000, () => {
