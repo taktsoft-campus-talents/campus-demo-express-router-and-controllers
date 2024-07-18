@@ -1,5 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
+const { sql } = require("@vercel/postgres");
 
 const notes = [
   {
@@ -47,8 +49,11 @@ app.get("/", (req, res) => {
   res.json({ msg: "Hello from the Notes App" });
 });
 
-app.get("/notes", (req, res) => {
-  res.json(notes);
+app.get("/notes", async (req, res) => {
+  const category = "shopping";
+  const { rows } = await sql`SELECT * FROM notes WHERE category=${category}`;
+  console.log(rows);
+  res.json(rows);
 });
 
 app.get("/notes/:id", (req, res) => {
