@@ -1,46 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
-const { sql } = require("@vercel/postgres");
 
-const notes = [
-  {
-    id: 34,
-    text: "Küche aufräumen!",
-    category: "cleaning",
-  },
-  {
-    id: 5,
-    text: "Kartoffeln kaufen",
-    category: "shopping",
-  },
-  {
-    id: 17,
-    text: "Wäsche waschen",
-    category: "cleaning",
-  },
-  {
-    id: 16,
-    text: "Obst kaufen",
-    category: "shopping",
-  },
-];
-
-// function getNextId() {
-//   // iterate over the array and find the highest id used. return this number +1
-//   let newId = 0;
-//   for (let i = 0; i < notes.length; i++) {
-//     if (notes[i].id > newId) {
-//       newId = notes[i].id;
-//     }
-//   }
-//   return newId + 1;
-// }
-
-function getNextId() {
-  //[34, 5, 17];
-  return Math.max(...notes.map((note) => note.id)) + 1;
-}
+const studentRoutes = require("./routes/students");
+const notesRoutes = require("./routes/notes");
 
 const app = express();
 app.use(bodyParser.json());
@@ -49,75 +12,11 @@ app.get("/", (req, res) => {
   res.json({ msg: "Hello from the Notes App" });
 });
 
-app.get("/notes", async (req, res) => {
-  const category = "shopping";
-  const { rows } = await sql`SELECT * FROM notes WHERE category=${category}`;
-  console.log(rows);
-  res.json(rows);
-});
+// Notes Domain
+app.use("/notes", notesRoutes);
 
-app.get("/notes/:id", (req, res) => {
-  const { id } = req.params;
-
-  const note = notes.find((note) => note.id === Number(id));
-
-  if (note) {
-    res.json(note);
-  } else {
-    res.status(404).json({ error: "resource not found" });
-  }
-});
-
-app.post("/notes", (req, res) => {
-  console.log(req.body);
-
-  // req.body contains the new note object WITHOUT id
-  const newNote = req.body;
-
-  // we calculate a new id based on the current content of our notes array
-  const nextId = getNextId();
-
-  // We create a new object based on the properties in newNote PLUS the new id
-  const noteToReturn = {
-    ...newNote, //spread operator
-    id: nextId,
-  };
-
-  // We push the new object into the notes array (later we will add this to a database)
-  notes.push(noteToReturn);
-
-  // We return the new note object to the client
-  res.json(noteToReturn);
-});
-
-app.delete("/notes/:id", (req, res) => {
-  const { id } = req.params;
-
-  console.log("id", id);
-
-  const index = notes.findIndex((note) => note.id === Number(id));
-
-  if (index > -1) {
-    notes.splice(index, 1);
-    res.json({ msg: `Element with id=${id} successfully deleted` });
-  } else {
-    res.status(404).json({ msg: "resource not found" });
-  }
-});
-
-app.patch("/notes/:id", (req, res) => {
-  const { id } = req.params;
-  const { text, category } = req.body;
-  const index = notes.findIndex((note) => note.id === Number(id));
-
-  if (index > -1) {
-    notes[index].text = text;
-    notes[index].category = category;
-    res.json(notes[index]);
-  } else {
-    res.status(404).json({ msg: "resource not found" });
-  }
-});
+// Students domain
+app.use("/students", studentRoutes);
 
 app.listen(3000, () => {
   console.log("Server started on port 3000");
